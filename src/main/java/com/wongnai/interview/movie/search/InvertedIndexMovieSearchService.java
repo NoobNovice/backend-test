@@ -1,7 +1,8 @@
 package com.wongnai.interview.movie.search;
 
-import java.util.List;
+import java.util.*;
 
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
@@ -15,7 +16,7 @@ import com.wongnai.interview.movie.MovieSearchService;
 public class InvertedIndexMovieSearchService implements MovieSearchService {
 	@Autowired
 	private MovieRepository movieRepository;
-
+	private Map<String, List<Long>> table;
 	@Override
 	public List<Movie> search(String queryText) {
 		//TODO: Step 4 => Please implement in-memory inverted index to search movie by keyword.
@@ -34,7 +35,40 @@ public class InvertedIndexMovieSearchService implements MovieSearchService {
 		// from inverted index for Star and for War so that you get movie ids 1,5,8 for Star and 2,5 for War. The result that
 		// you have to return can be union or intersection of those 2 sets of ids.
 		// By the way, in this assignment, you must use intersection so that it left for just movie id 5.
-
-		return null;
+		if(table == null)
+		{
+			table = new HashMap<>();
+			for(Movie movie:movieRepository.findAll()){
+				for(String word : movie.getName().split(" ")){
+					String wordLowerCase = word.toLowerCase();
+					Long movieId = movie.getId();
+					if(table.containsKey(wordLowerCase)){
+						table.get(wordLowerCase).add(movieId);
+					}else{
+						List<Long> idList = new ArrayList<Long>();
+						idList.add(movieId);
+						table.put(wordLowerCase,idList);
+					}
+				}
+			}
+		}
+		Set<Long> searchId = null;
+		for(String word : queryText.split(" ")){
+			String wordLowerCase = word.toLowerCase();
+			if(table.containsKey(wordLowerCase)){
+				if(searchId == null){
+					searchId = new HashSet<>(table.get(wordLowerCase));
+				}else{
+					searchId.retainAll(table.get(wordLowerCase));
+				}
+			}
+		}
+		List<Movie> moviesList = new ArrayList<Movie>();
+		try{
+			moviesList = Lists.newArrayList(movieRepository.findAllById(searchId));
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+		return moviesList;
 	}
 }
