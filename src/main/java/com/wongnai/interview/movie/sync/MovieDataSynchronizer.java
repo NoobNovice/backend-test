@@ -2,6 +2,9 @@ package com.wongnai.interview.movie.sync;
 
 import javax.transaction.Transactional;
 
+import com.wongnai.interview.movie.Movie;
+import com.wongnai.interview.movie.external.MovieData;
+import com.wongnai.interview.movie.external.MoviesResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,5 +22,13 @@ public class MovieDataSynchronizer {
 	@Transactional
 	public void forceSync() {
 		//TODO: implement this to sync movie into repository
+		MoviesResponse movieList = movieDataService.fetchAll();
+		for(int i=0;i<movieList.size();i++)
+		{
+			MovieData movieData = movieList.get(i);
+			Movie tmp = new Movie(movieData.getTitle());
+			tmp.getActors().addAll(movieData.getCast());
+			movieRepository.save(tmp);
+		}
 	}
 }
